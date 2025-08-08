@@ -590,30 +590,42 @@
         }
 
         async function loadData() {
-            try {
-                const doc = await db.collection('camping').doc('san-bozzo-2025').get();
-                if (doc.exists) {
-                    const data = doc.data();
-                    items = { ...items, ...data };
-                } else {
-                    // Initialize with default items for Lista Principale
-                    items.principale = initialItems.map(text => createItem(text));
-                    await saveData();
+            if (currentUser && currentUser.email !== 'offline@local') {
+                try {
+                    console.log('Loading data from Firebase...');
+                    const doc = await db.collection('camping').doc('san-bozzo-2025').get();
+                    if (doc.exists) {
+                        const data = doc.data();
+                        console.log('Data loaded from Firebase:', data);
+                        items = { ...items, ...data };
+                    } else {
+                        console.log('No document found, initializing with default items');
+                        // Initialize with default items for Lista Principale
+                        items.principale = initialItems.map(text => createItem(text));
+                        await saveData();
+                    }
+                } catch (error) {
+                    console.error('Error loading data from Firebase:', error);
+                    // Fallback to localStorage
+                    const savedData = localStorage.getItem('sanBozzo2025');
+                    if (savedData) {
+                        items = JSON.parse(savedData);
+                    } else {
+                        items.principale = initialItems.map(text => createItem(text));
+                    }
                 }
-                updateDaComprareList();
-                renderItems();
-            } catch (error) {
-                console.error('Error loading data:', error);
-                // Fallback to localStorage
+            } else {
+                // Offline mode - load from localStorage
                 const savedData = localStorage.getItem('sanBozzo2025');
                 if (savedData) {
                     items = JSON.parse(savedData);
                 } else {
                     items.principale = initialItems.map(text => createItem(text));
                 }
-                updateDaComprareList();
-                renderItems();
             }
+            
+            updateDaComprareList();
+            renderItems();
         }
 
         async function saveData() {
@@ -623,22 +635,34 @@
             // Try to save to Firebase if user is properly authenticated
             if (currentUser && currentUser.email !== 'offline@local') {
                 try {
+                    console.log('Saving data to Firebase...', items);
                     await db.collection('camping').doc('san-bozzo-2025').set(items);
+                    console.log('Data saved successfully to Firebase');
                 } catch (error) {
                     console.error('Error saving to Firebase:', error);
+                    alert('Errore nel salvare su Firebase. I dati sono salvati localmente.');
                 }
             }
         }
 
         function setupRealtimeListeners() {
-            db.collection('camping').doc('san-bozzo-2025').onSnapshot((doc) => {
-                if (doc.exists) {
-                    const data = doc.data();
-                    items = { ...items, ...data };
-                    updateDaComprareList();
-                    renderItems();
-                }
-            });
+            if (currentUser && currentUser.email !== 'offline@local') {
+                console.log('Setting up realtime listeners...');
+                db.collection('camping').doc('san-bozzo-2025').onSnapshot((doc) => {
+                    if (doc.exists) {
+                        console.log('Data updated from Firebase:', doc.data());
+                        const newData = doc.data();
+                        // Only update if data is different to avoid infinite loops
+                        if (JSON.stringify(newData) !== JSON.stringify(items)) {
+                            items = { ...items, ...newData };
+                            updateDaComprareList();
+                            renderItems();
+                        }
+                    }
+                }, (error) => {
+                    console.error('Error in realtime listener:', error);
+                });
+            }
         }
 
         function switchTab(tab) {
