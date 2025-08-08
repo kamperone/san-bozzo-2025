@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>San Bozzo 2025 - 20th Anniversary</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-auth-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <meta name="google-signin-client_id" content="686291220063-kj8o6qm5v9h2h3l4n1p0r2t4w6y8a0c.apps.googleusercontent.com">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #2d5a27, #4a7c59);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(45, 90, 39, 0.95);
+            backdrop-filter: blur(10px);
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .login-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 80vh;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .login-btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .login-btn:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab {
+            flex: 1;
+            min-width: 100px;
+            padding: 1rem 0.5rem;
+            text-align: center;
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .tab.active {
+            background: rgba(255,255,255,0.2);
+            border-bottom: 3px solid #ffd700;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0;
+            padding: 1rem;
+            background: rgba(255,255,255,0.95);
+            min-height: calc(100vh - 160px);
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .btn-primary {
+            background: #2d5a27;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .add-item {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .add-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .add-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            min-width: 80px;
+        }
+
+        .item {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .item-text {
+            width: 100%;
+            border: none;
+            background: transparent;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #2d5a27;
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .item-text:focus {
+            outline: 2px solid #2d5a27;
+            background: rgba(45, 90, 39, 0.05);
+        }
+
+        .checkboxes {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 100px;
+            justify-content: center;
+        }
+
+        .checkbox-group.comprare {
+            background: rgba(220, 53, 69, 0.1);
+            border: 2px solid transparent;
+        }
+        
+        .checkbox-group.comprare.checked {
+            background: rgba(220, 53, 69, 0.2);
+            border-color: #dc3545;
+        }
+
+        .checkbox-group.verificato {
+            background: rgba(255, 193, 7, 0.1);
+            border: 2px solid transparent;
+        }
+        
+        .checkbox-group.verificato.checked {
+            background: rgba(255, 193, 7, 0.2);
+            border-color: #ffc107;
+        }
+
+        .checkbox-group.pronto {
+            background: rgba(40, 167, 69, 0.1);
+            border: 2px solid transparent;
+        }
+        
+        .checkbox-group.pronto.checked {
+            background: rgba(40, 167, 69, 0.2);
+            border-color: #28a745;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: currentColor;
+        }
+
+        .checkbox-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .notes {
+            width: 100%;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 0.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 60px;
+            transition: all 0.3s ease;
+        }
+
+        .notes:focus {
+            outline: none;
+            border-color: #2d5a27;
+        }
+
+        .item-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: #c82333;
+            transform: scale(1.05);
+        }
+
+        .timestamp {
+            font-size: 0.75rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .user-info {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            color: white;
+            font-size: 0.8rem;
+            background: rgba(0,0,0,0.2);
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.75rem;
+            }
+            
+            .header h1 {
+                font-size: 1.25rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                min-width: auto;
+                flex: none;
+            }
+            
+            .add-item {
+                flex-direction: column;
+            }
+            
+            .add-input {
+                min-width: auto;
+            }
+            
+            .checkboxes {
+                flex-direction: column;
+            }
+            
+            .checkbox-group {
+                min-width: auto;
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tabs {
+                font-size: 0.8rem;
+            }
+            
+            .tab {
+                padding: 0.75rem 0.25rem;
+                font-size: 0.75rem;
+            }
+            
+            .item {
+                padding: 0.75rem;
+            }
+            
+            .user-info {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin-top: 0.5rem;
+                text-align: center;
+                display: block;
+            }
+            
+            .header {
+                padding-right: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="user-info hidden" id="userInfo">
+            <span id="userName"></span>
+            <br>
+            <small onclick="logout()" style="cursor: pointer; text-decoration: underline;">Logout</small>
+        </div>
+        <h1>🏕️ San Bozzo 2025</h1>
+        <div class="subtitle">20th Anniversary</div>
+    </div>
+
+    <div id="loginScreen" class="login-screen">
+        <h2>Benvenuto al San Bozzo 2025!</h2>
+        <p>Accedi con Google per sincronizzare le liste con la tua compagna</p>
+        <button class="login-btn" onclick="loginWithGoogle()">
+            🔐 Accedi con Google
+        </button>
+    </div>
+
+    <div id="mainApp" class="hidden">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('principale')">Lista Principale</button>
+            <button class="tab" onclick="switchTab('abbigliamento')">Abbigliamento</button>
+            <button class="tab" onclick="switchTab('cibo')">Cibo</button>
+            <button class="tab" onclick="switchTab('daComprare')">Da Comprare</button>
+        </div>
+
+        <div class="container">
+            <div class="controls">
+                <button class="btn btn-primary" onclick="sortByDate()">📅 Ordina per Data</button>
+                <button class="btn btn-secondary" onclick="sortAlphabetically()">🔤 Ordina A-Z</button>
+            </div>
+
+            <div class="add-item" id="addItemSection">
+                <input type="text" class="add-input" id="newItemText" placeholder="Aggiungi nuovo elemento...">
+                <button class="add-btn" onclick="addItem()">➕ Aggiungi</button>
+            </div>
+
+            <div id="itemsList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB4ZO4HqqB8yELHALTeu88QmcIL9IZ-n78",
+            authDomain: "sanbozzo2025.firebaseapp.com",
+            databaseURL: "https://sanbozzo2025-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "sanbozzo2025",
+            storageBucket: "sanbozzo2025.firebasestorage.app",
+            messagingSenderId: "686291220063",
+            appId: "1:686291220063:web:da8e6561c975bd35654dea"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let currentTab = 'principale';
+        let currentUser = null;
+        let items = {
+            principale: [],
+            abbigliamento: [],
+            cibo: [],
+            daComprare: []
+        };
+
+        // Initial items for Lista Principale
+        const initialItems = [
+            'CARTA IGIENICA - 6 ROTOLI',
+            'TENDA BIMBI',
+            'TENDA GRANDI',
+            'MATERASSINO x 2 GRANDI',
+            'MATERASSINO x 2 BIMBI',
+            'MATERASSINO x 2 BIMBI',
+            '6 SACCHI A PELO (5 UMANI + 1 CANI)',
+            '3 LENZUOLA COPRI MATERASSINI + CUSCINI x CIASCUNO',
+            '2 VERANDE/TETTI',
+            '4 PAVIMENTI TENDE (2 PICCOLI + 2 GRANDI)',
+            'WALKIE-TALKIE (x 3)',
+            'LUCI & POWER BANK',
+            'DOCCIA + DOCCIA',
+            'POLTRETTA ELETTRICA (x 2?)',
+            'GPS NAVI',
+            'SALVIETTE UMIDE',
+            'SAPONE & SHAMPOO',
+            'ASPIRAPOLVERE',
+            'KIT PRONTO SOCCORSO + MEDICINALI',
+            'SEDIE',
+            'AMACA ATTICA'
+        ];
+
+        // Auth state observer
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                document.getElementById('userInfo').classList.remove('hidden');
+                document.getElementById('userName').textContent = user.displayName || user.email;
+                loadData();
+                setupRealtimeListeners();
+            } else {
+                currentUser = null;
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('mainApp').classList.add('hidden');
+                document.getElementById('userInfo').classList.add('hidden');
+            }
+        });
+
+        function loginWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // For file:// protocol, use redirect method
+            if (location.protocol === 'file:') {
+                // Add required scopes
+                provider.addScope('email');
+                provider.addScope('profile');
+                
+                auth.signInWithRedirect(provider).catch((error) => {
+                    console.error('Redirect login error:', error);
+                    
+                    // Try alternative: create a temporary server-like experience
+                    if (confirm('Il login diretto dal file non funziona. Vuoi provare una soluzione alternativa?\n\nClicca OK per aprire l\'app in modalità offline (senza sincronizzazione) o Annulla per usare un server locale.')) {
+                        // Enable offline mode
+                        enableOfflineMode();
+                    } else {
+                        alert('Per la sincronizzazione completa, apri il file con un server locale:\n\n1. Installa "Live Server" su VS Code\n2. Oppure usa Python: python -m http.server 8000\n3. Vai su http://localhost:8000');
+                    }
+                });
+                
+                // Handle redirect result
+                auth.getRedirectResult().then((result) => {
+                    if (result.user) {
+                        console.log('Login successful:', result.user);
+                    }
+                });
+                
+            } else {
+                // For http/https, use popup
+                auth.signInWithPopup(provider).catch((error) => {
+                    console.error('Popup login error:', error);
+                    // Fallback to redirect
+                    auth.signInWithRedirect(provider).catch((redirectError) => {
+                        console.error('Redirect login error:', redirectError);
+                        alert('Errore durante il login. Riprova.');
+                    });
+                });
+            }
+        }
+        
+        function enableOfflineMode() {
+            // Simulate logged in user for offline mode
+            currentUser = { displayName: 'Utente Offline', email: 'offline@local' };
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('userInfo').classList.remove('hidden');
+            document.getElementById('userName').textContent = 'Modalità Offline';
+            
+            // Load from localStorage only
+            const savedData = localStorage.getItem('sanBozzo2025');
+            if (savedData) {
+                items = JSON.parse(savedData);
+            } else {
+                // Initialize with default items
+                items.principale = initialItems.map(text => createItem(text));
+                localStorage.setItem('sanBozzo2025', JSON.stringify(items));
+            }
+            
+            updateDaComprareList();
+            renderItems();
+            
+            alert('🏕️ Modalità Offline Attivata!\n\nI dati saranno salvati solo localmente su questo dispositivo.\nPer sincronizzare con la tua compagna, dovrete usare un server locale.');
+        }
+
+        function logout() {
+            auth.signOut();
+        }
+
+        function generateId() {
+            return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+        }
+
+        function createItem(text, id = null) {
+            return {
+                id: id || generateId(),
+                text: text,
+                comprare: false,
+                verificato: false,
+                pronto: false,
+                notes: '',
+                timestamp: Date.now(),
+                lastModified: Date.now()
+            };
+        }
+
+        async function loadData() {
+            try {
+                const doc = await db.collection('camping').doc('san-bozzo-2025').get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    items = { ...items, ...data };
+                } else {
+                    // Initialize with default items for Lista Principale
+                    items.principale = initialItems.map(text => createItem(text));
+                    await saveData();
+                }
+                updateDaComprareList();
+                renderItems();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                // Fallback to localStorage
+                const savedData = localStorage.getItem('sanBozzo2025');
+                if (savedData) {
+                    items = JSON.parse(savedData);
+                } else {
+                    items.principale = initialItems.map(text => createItem(text));
+                }
+                updateDaComprareList();
+                renderItems();
+            }
+        }
+
+        async function saveData() {
+            // Always save to localStorage as backup
+            localStorage.setItem('sanBozzo2025', JSON.stringify(items));
+            
+            // Try to save to Firebase if user is properly authenticated
+            if (currentUser && currentUser.email !== 'offline@local') {
+                try {
+                    await db.collection('camping').doc('san-bozzo-2025').set(items);
+                } catch (error) {
+                    console.error('Error saving to Firebase:', error);
+                }
+            }
+        }
+
+        function setupRealtimeListeners() {
+            db.collection('camping').doc('san-bozzo-2025').onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    items = { ...items, ...data };
+                    updateDaComprareList();
+                    renderItems();
+                }
+            });
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Hide add item section for "Da Comprare" tab
+            const addSection = document.getElementById('addItemSection');
+            if (tab === 'daComprare') {
+                addSection.classList.add('hidden');
+            } else {
+                addSection.classList.remove('hidden');
+            }
+            
+            renderItems();
+        }
+
+        function updateDaComprareList() {
+            items.daComprare = [];
+            ['principale', 'abbigliamento', 'cibo'].forEach(category => {
+                items[category].forEach(item => {
+                    if (item.comprare) {
+                        items.daComprare.push({...item});
+                    }
+                });
+            });
+        }
+
+        function addItem() {
+            const input = document.getElementById('newItemText');
+            const text = input.value.trim();
+            
+            if (text && currentTab !== 'daComprare') {
+                const newItem = createItem(text);
+                items[currentTab].push(newItem);
+                input.value = '';
+                saveData();
+                renderItems();
+            }
+        }
+
+        function deleteItem(id) {
+            if (confirm('Sei sicuro di voler eliminare questo elemento?')) {
+                if (currentTab !== 'daComprare') {
+                    items[currentTab] = items[currentTab].filter(item => item.id !== id);
+                    saveData();
+                    renderItems();
+                }
+            }
+        }
+
+        function updateItem(id, field, value) {
+            if (currentTab === 'daComprare') return;
+            
+            const item = items[currentTab].find(item => item.id === id);
+            if (item) {
+                item[field] = value;
+                item.lastModified = Date.now();
+                saveData();
+            }
+        }
+
+        function updateCheckbox(id, field) {
+            if (currentTab === 'daComprare') return;
+            
+            const item = items[currentTab].find(item => item.id === id);
+            if (item) {
+                item[field] = !item[field];
+                item.lastModified = Date.now();
+                saveData();
+                
+                // Update the visual state immediately
+                const checkbox = document.querySelector(`input[data-id="${id}"][data-field="${field}"]`);
+                const group = checkbox.closest('.checkbox-group');
+                if (item[field]) {
+                    group.classList.add('checked');
+                } else {
+                    group.classList.remove('checked');
+                }
+                
+                setTimeout(() => {
+                    updateDaComprareList();
+                    if (currentTab === 'daComprare') {
+                        renderItems();
+                    }
+                }, 100);
+            }
+        }
+
+        function sortByDate() {
+            if (currentTab === 'daComprare') {
+                updateDaComprareList();
+            }
+            items[currentTab].sort((a, b) => b.lastModified - a.lastModified);
+            renderItems();
+        }
+
+        function sortAlphabetically() {
+            if (currentTab === 'daComprare') {
+                updateDaComprareList();
+            }
+            items[currentTab].sort((a, b) => a.text.toLowerCase().localeCompare(b.text.toLowerCase()));
+            renderItems();
+        }
+
+        function renderItems() {
+            const container = document.getElementById('itemsList');
+            const currentItems = items[currentTab] || [];
+            
+            if (currentTab === 'daComprare') {
+                updateDaComprareList();
+            }
+
+            container.innerHTML = currentItems.map(item => `
+                <div class="item">
+                    <input type="text" 
+                           class="item-text" 
+                           value="${item.text}" 
+                           ${currentTab === 'daComprare' ? 'readonly' : ''}
+                           onchange="updateItem('${item.id}', 'text', this.value)">
+                    
+                    <div class="checkboxes">
+                        <div class="checkbox-group comprare ${item.comprare ? 'checked' : ''}">
+                            <input type="checkbox" 
+                                   class="checkbox" 
+                                   ${item.comprare ? 'checked' : ''}
+                                   ${currentTab === 'daComprare' ? 'disabled' : ''}
+                                   data-id="${item.id}"
+                                   data-field="comprare"
+                                   onchange="updateCheckbox('${item.id}', 'comprare')">
+                            <label class="checkbox-label" style="color: #dc3545;">Comprare</label>
+                        </div>
+                        
+                        <div class="checkbox-group verificato ${item.verificato ? 'checked' : ''}">
+                            <input type="checkbox" 
+                                   class="checkbox" 
+                                   ${item.verificato ? 'checked' : ''}
+                                   ${currentTab === 'daComprare' ? 'disabled' : ''}
+                                   data-id="${item.id}"
+                                   data-field="verificato"
+                                   onchange="updateCheckbox('${item.id}', 'verificato')">
+                            <label class="checkbox-label" style="color: #ffc107;">Verificato</label>
+                        </div>
+                        
+                        <div class="checkbox-group pronto ${item.pronto ? 'checked' : ''}">
+                            <input type="checkbox" 
+                                   class="checkbox" 
+                                   ${item.pronto ? 'checked' : ''}
+                                   ${currentTab === 'daComprare' ? 'disabled' : ''}
+                                   data-id="${item.id}"
+                                   data-field="pronto"
+                                   onchange="updateCheckbox('${item.id}', 'pronto')">
+                            <label class="checkbox-label" style="color: #28a745;">Pronto</label>
+                        </div>
+                    </div>
+                    
+                    <textarea class="notes" 
+                              placeholder="Note..."
+                              ${currentTab === 'daComprare' ? 'readonly' : ''}
+                              onchange="updateItem('${item.id}', 'notes', this.value)">${item.notes}</textarea>
+                    
+                    <div class="item-actions">
+                        <div class="timestamp">
+                            ${new Date(item.lastModified).toLocaleString('it-IT')}
+                        </div>
+                        ${currentTab !== 'daComprare' ? `
+                            <button class="delete-btn" onclick="deleteItem('${item.id}')">🗑️ Elimina</button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Add item on Enter key press
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('newItemText').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addItem();
+                }
+            });
+        });
+
+        // PWA Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js');
+            });
+        }
+    </script>
+</body>
+</html>
