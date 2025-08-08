@@ -489,19 +489,54 @@
         auth.onAuthStateChanged((user) => {
             if (user) {
                 currentUser = user;
+                console.log('✅ User authenticated:', user.email);
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('mainApp').classList.remove('hidden');
                 document.getElementById('userInfo').classList.remove('hidden');
                 document.getElementById('userName').textContent = user.displayName || user.email;
+                
+                // Test Firebase connection
+                testFirebaseConnection();
+                
                 loadData();
                 setupRealtimeListeners();
             } else {
                 currentUser = null;
+                console.log('❌ User not authenticated');
                 document.getElementById('loginScreen').classList.remove('hidden');
                 document.getElementById('mainApp').classList.add('hidden');
                 document.getElementById('userInfo').classList.add('hidden');
             }
         });
+
+        async function testFirebaseConnection() {
+            try {
+                console.log('🔍 Testing Firebase connection...');
+                console.log('📋 Current user:', currentUser);
+                console.log('🔑 Auth state:', auth.currentUser);
+                
+                // Test read
+                const testRead = await db.collection('camping').doc('san-bozzo-2025').get();
+                console.log('✅ Firebase READ successful! Doc exists:', testRead.exists);
+                if (testRead.exists) {
+                    console.log('📄 Current data:', testRead.data());
+                }
+                
+                // Test write
+                await db.collection('camping').doc('test-connection').set({
+                    test: 'connection-test',
+                    timestamp: Date.now(),
+                    user: currentUser.email
+                });
+                console.log('✅ Firebase WRITE successful!');
+                
+            } catch (error) {
+                console.error('❌ Firebase connection failed:', error);
+                console.error('❌ Error code:', error.code);
+                console.error('❌ Error message:', error.message);
+                alert('❌ Errore Firebase: ' + error.code + ' - ' + error.message);
+            }
+        }
 
         function loginWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider();
@@ -647,21 +682,37 @@
 
         function setupRealtimeListeners() {
             if (currentUser && currentUser.email !== 'offline@local') {
-                console.log('Setting up realtime listeners...');
-                db.collection('camping').doc('san-bozzo-2025').onSnapshot((doc) => {
+                console.log('🔔 Setting up realtime listeners for user:', currentUser.email);
+                
+                const unsubscribe = db.collection('camping').doc('san-bozzo-2025').onSnapshot((doc) => {
+                    console.log('📡 Realtime update received!');
                     if (doc.exists) {
-                        console.log('Data updated from Firebase:', doc.data());
+                        console.log('📄 New data from Firebase:', doc.data());
                         const newData = doc.data();
-                        // Only update if data is different to avoid infinite loops
-                        if (JSON.stringify(newData) !== JSON.stringify(items)) {
+                        
+                        // Check if data actually changed
+                        const currentDataStr = JSON.stringify(items);
+                        const newDataStr = JSON.stringify({...items, ...newData});
+                        
+                        if (currentDataStr !== newDataStr) {
+                            console.log('🔄 Data changed, updating UI...');
                             items = { ...items, ...newData };
                             updateDaComprareList();
                             renderItems();
+                        } else {
+                            console.log('📝 Data unchanged, skipping update');
                         }
+                    } else {
+                        console.log('📄 Document does not exist');
                     }
                 }, (error) => {
-                    console.error('Error in realtime listener:', error);
+                    console.error('❌ Realtime listener error:', error);
+                    console.error('❌ Error code:', error.code);
+                    console.error('❌ Error message:', error.message);
                 });
+                
+                // Store unsubscribe function for cleanup
+                window.firestoreUnsubscribe = unsubscribe;
             }
         }
 
