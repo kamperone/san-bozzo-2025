@@ -766,6 +766,7 @@
             
             updateDaComprareList();
             renderItems();
+            updateTabCounters(); // Add this line
             
             alert('🏕️ Modalità Offline Attivata!\n\nI dati saranno salvati solo localmente su questo dispositivo.\nPer sincronizzare con la tua compagna, dovrete usare un server locale.');
         }
@@ -829,6 +830,7 @@
             
             updateDaComprareList();
             renderItems();
+            updateTabCounters(); // Add this line to update counters after loading
         }
 
         async function saveData() {
@@ -867,6 +869,7 @@
                             items = { ...items, ...newData };
                             updateDaComprareList();
                             renderItems();
+                            updateTabCounters(); // Add this line
                         } else {
                             console.log('📝 Data unchanged, skipping update');
                         }
@@ -1078,6 +1081,7 @@
                 
                 setTimeout(() => {
                     updateDaComprareList();
+                    updateTabCounters(); // Add this line
                     if (currentTab === 'daComprare') {
                         renderItems();
                     }
