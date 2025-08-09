@@ -914,16 +914,42 @@
             updateTabCounters();
         }
 
-        function updateDaComprareList() {
-            items.daComprare = [];
-            ['principale', 'abbigliamento', 'cibo'].forEach(category => {
-                items[category].forEach(item => {
-                    if (item.comprare) {
-                        items.daComprare.push({...item});
-                    }
-                });
-            });
-            updateTabCounters(); // Update counters when "Da Comprare" list changes
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Hide add item section for "Da Comprare" tab
+            const addSection = document.getElementById('addItemSection');
+            if (tab === 'daComprare') {
+                addSection.classList.add('hidden');
+            } else {
+                addSection.classList.remove('hidden');
+            }
+            
+            renderItems();
+            updateTabCounters();
+        }
+
+        // Add a simple force update function
+        function forceUpdateCounters() {
+            console.log('🔄 Force updating all counters...');
+            const principale = items.principale ? items.principale.length : 0;
+            const abbigliamento = items.abbigliamento ? items.abbigliamento.length : 0;
+            const cibo = items.cibo ? items.cibo.length : 0;
+            const daComprare = items.daComprare ? items.daComprare.length : 0;
+            
+            // Direct DOM manipulation
+            const tabs = document.querySelectorAll('.tab-counter');
+            console.log('📍 Direct counter elements found:', tabs.length);
+            
+            if (tabs.length >= 4) {
+                tabs[0].textContent = principale; // Lista Principale
+                tabs[1].textContent = abbigliamento; // Abbigliamento  
+                tabs[2].textContent = cibo; // Cibo
+                tabs[3].textContent = daComprare; // Da Comprare
+                console.log(`🎯 Set counters: ${principale}, ${abbigliamento}, ${cibo}, ${daComprare}`);
+            }
         }
 
         function addItem() {
