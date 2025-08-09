@@ -93,11 +93,34 @@
             transition: all 0.3s ease;
             font-size: 0.85rem;
             white-space: nowrap;
+            position: relative;
         }
 
         .tab.active {
             background: rgba(255,255,255,0.2);
             border-bottom: 3px solid #ffd700;
+        }
+
+        .tab-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .tab-counter {
+            display: block;
+            font-size: 0.75rem;
+            background: rgba(255,255,255,0.3);
+            border-radius: 12px;
+            padding: 0.2rem 0.6rem;
+            margin: 0 auto;
+            max-width: fit-content;
+            font-weight: 700;
+        }
+
+        .tab.active .tab-counter {
+            background: rgba(255,215,0,0.8);
+            color: #2d5a27;
         }
 
         .container {
@@ -183,13 +206,19 @@
             box-shadow: 0 4px 16px rgba(0,0,0,0.15);
         }
 
+        .item-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
         .item-text {
-            width: 100%;
+            flex: 1;
             border: none;
             background: transparent;
             font-size: 1rem;
             font-weight: 600;
-            margin-bottom: 0.75rem;
             color: #2d5a27;
             padding: 0.5rem;
             border-radius: 6px;
@@ -199,6 +228,122 @@
         .item-text:focus {
             outline: 2px solid #2d5a27;
             background: rgba(45, 90, 39, 0.05);
+        }
+
+        .photo-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            min-width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .photo-btn:hover {
+            background: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .photo-btn.has-photo {
+            background: #28a745;
+        }
+
+        .photo-preview {
+            width: 100%;
+            max-width: 150px;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #ddd;
+        }
+
+        .photo-preview:hover {
+            transform: scale(1.02);
+            border-color: #007bff;
+        }
+
+        .photo-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            backdrop-filter: blur(5px);
+        }
+
+        .photo-modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 12px;
+        }
+
+        .photo-modal-close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        .photo-modal-close:hover {
+            color: #bbb;
+        }
+
+        .photo-actions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            z-index: 1001;
+        }
+
+        .photo-action-btn {
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .photo-action-btn:hover {
+            background: white;
+            transform: translateY(-2px);
+        }
+
+        .photo-action-btn.delete {
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+        }
+
+        .photo-action-btn.delete:hover {
+            background: #dc3545;
+        }
+
+        .photo-input {
+            display: none;
         }
 
         .checkboxes {
@@ -413,10 +558,22 @@
 
     <div id="mainApp" class="hidden">
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('principale')">Lista Principale</button>
-            <button class="tab" onclick="switchTab('abbigliamento')">Abbigliamento</button>
-            <button class="tab" onclick="switchTab('cibo')">Cibo</button>
-            <button class="tab" onclick="switchTab('daComprare')">Da Comprare</button>
+            <button class="tab active" onclick="switchTab('principale')">
+                <span class="tab-label">Lista Principale</span>
+                <span class="tab-counter">0</span>
+            </button>
+            <button class="tab" onclick="switchTab('abbigliamento')">
+                <span class="tab-label">Abbigliamento</span>
+                <span class="tab-counter">0</span>
+            </button>
+            <button class="tab" onclick="switchTab('cibo')">
+                <span class="tab-label">Cibo</span>
+                <span class="tab-counter">0</span>
+            </button>
+            <button class="tab" onclick="switchTab('daComprare')">
+                <span class="tab-label">Da Comprare</span>
+                <span class="tab-counter">0</span>
+            </button>
         </div>
 
         <div class="container">
@@ -431,6 +588,16 @@
             </div>
 
             <div id="itemsList"></div>
+        </div>
+    </div>
+
+    <!-- Photo Modal -->
+    <div id="photoModal" class="photo-modal" onclick="closePhotoModal()">
+        <span class="photo-modal-close" onclick="closePhotoModal()">&times;</span>
+        <img class="photo-modal-content" id="modalPhoto">
+        <div class="photo-actions" onclick="event.stopPropagation()">
+            <button class="photo-action-btn" onclick="retakePhoto()">📷 Rifai Foto</button>
+            <button class="photo-action-btn delete" onclick="deletePhoto()">🗑️ Elimina</button>
         </div>
     </div>
 
@@ -498,7 +665,10 @@
                 // Test Firebase connection
                 testFirebaseConnection();
                 
-                loadData();
+                loadData().then(() => {
+                    console.log('📊 Data loaded, updating counters...');
+                    updateTabCounters();
+                });
                 setupRealtimeListeners();
             } else {
                 currentUser = null;
@@ -599,6 +769,7 @@
             
             updateDaComprareList();
             renderItems();
+            updateTabCounters(); // Add this line
             
             alert('🏕️ Modalità Offline Attivata!\n\nI dati saranno salvati solo localmente su questo dispositivo.\nPer sincronizzare con la tua compagna, dovrete usare un server locale.');
         }
@@ -619,12 +790,14 @@
                 verificato: false,
                 pronto: false,
                 notes: '',
+                photo: null, // Base64 encoded photo
                 timestamp: Date.now(),
                 lastModified: Date.now()
             };
         }
 
         async function loadData() {
+            console.log('📂 Loading data...');
             if (currentUser && currentUser.email !== 'offline@local') {
                 try {
                     console.log('Loading data from Firebase...');
@@ -659,8 +832,15 @@
                 }
             }
             
+            console.log('📋 Final items after loading:', items);
             updateDaComprareList();
             renderItems();
+            
+            // Force update counters after a small delay
+            setTimeout(() => {
+                console.log('⏰ Force updating counters after delay...');
+                updateTabCounters();
+            }, 100);
         }
 
         async function saveData() {
@@ -699,6 +879,7 @@
                             items = { ...items, ...newData };
                             updateDaComprareList();
                             renderItems();
+                            updateTabCounters(); // Add this line
                         } else {
                             console.log('📝 Data unchanged, skipping update');
                         }
@@ -730,6 +911,7 @@
             }
             
             renderItems();
+            updateTabCounters();
         }
 
         function updateDaComprareList() {
@@ -741,6 +923,7 @@
                     }
                 });
             });
+            updateTabCounters(); // Update counters when "Da Comprare" list changes
         }
 
         function addItem() {
@@ -752,7 +935,7 @@
                 items[currentTab].push(newItem);
                 input.value = '';
                 saveData();
-                renderItems();
+                renderItems(); // This will also update counters
             }
         }
 
@@ -761,7 +944,118 @@
                 if (currentTab !== 'daComprare') {
                     items[currentTab] = items[currentTab].filter(item => item.id !== id);
                     saveData();
+                    renderItems(); // This will also update counters
+                }
+            }
+        }
+
+        function compressImage(file, maxWidth = 800, quality = 0.8) {
+            return new Promise((resolve) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = () => {
+                    // Calculate new dimensions
+                    let { width, height } = img;
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = (height * maxWidth) / width;
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxWidth) {
+                            width = (width * maxWidth) / height;
+                            height = maxWidth;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Draw and compress
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                    resolve(compressedDataUrl);
+                };
+                
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        function takePhoto(itemId) {
+            if (currentTab === 'daComprare') return;
+            
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.capture = 'environment'; // Use back camera
+            
+            input.onchange = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                try {
+                    // Show loading
+                    const btn = document.querySelector(`[onclick="takePhoto('${itemId}')"]`);
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '⏳';
+                    btn.disabled = true;
+                    
+                    // Compress image
+                    const compressedImage = await compressImage(file);
+                    
+                    // Update item
+                    const item = items[currentTab].find(item => item.id === itemId);
+                    if (item) {
+                        item.photo = compressedImage;
+                        item.lastModified = Date.now();
+                        await saveData();
+                        renderItems();
+                    }
+                    
+                    // Restore button
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    
+                } catch (error) {
+                    console.error('Error processing photo:', error);
+                    alert('Errore nel processare la foto. Riprova.');
+                }
+            };
+            
+            input.click();
+        }
+
+        function viewPhoto(itemId) {
+            const item = items[currentTab].find(item => item.id === itemId);
+            if (!item || !item.photo) return;
+            
+            const modal = document.getElementById('photoModal');
+            const modalImg = document.getElementById('modalPhoto');
+            
+            modal.style.display = 'block';
+            modalImg.src = item.photo;
+            
+            // Set current photo for actions
+            window.currentPhotoItemId = itemId;
+        }
+
+        function closePhotoModal() {
+            document.getElementById('photoModal').style.display = 'none';
+        }
+
+        function deletePhoto() {
+            if (!window.currentPhotoItemId) return;
+            
+            if (confirm('Vuoi eliminare questa foto?')) {
+                const item = items[currentTab].find(item => item.id === window.currentPhotoItemId);
+                if (item) {
+                    item.photo = null;
+                    item.lastModified = Date.now();
+                    saveData();
                     renderItems();
+                    closePhotoModal();
                 }
             }
         }
@@ -797,6 +1091,7 @@
                 
                 setTimeout(() => {
                     updateDaComprareList();
+                    updateTabCounters(); // Add this line
                     if (currentTab === 'daComprare') {
                         renderItems();
                     }
@@ -830,11 +1125,27 @@
 
             container.innerHTML = currentItems.map(item => `
                 <div class="item">
-                    <input type="text" 
-                           class="item-text" 
-                           value="${item.text}" 
-                           ${currentTab === 'daComprare' ? 'readonly' : ''}
-                           onchange="updateItem('${item.id}', 'text', this.value)">
+                    <div class="item-header">
+                        <input type="text" 
+                               class="item-text" 
+                               value="${item.text}" 
+                               ${currentTab === 'daComprare' ? 'readonly' : ''}
+                               onchange="updateItem('${item.id}', 'text', this.value)">
+                        
+                        <button class="photo-btn ${item.photo ? 'has-photo' : ''}" 
+                                onclick="takePhoto('${item.id}')"
+                                ${currentTab === 'daComprare' ? 'disabled' : ''}
+                                title="${item.photo ? 'Cambia foto' : 'Aggiungi foto'}">
+                            📷
+                        </button>
+                    </div>
+                    
+                    ${item.photo ? `
+                        <img src="${item.photo}" 
+                             class="photo-preview" 
+                             onclick="viewPhoto('${item.id}')"
+                             alt="Foto di ${item.text}">
+                    ` : ''}
                     
                     <div class="checkboxes">
                         <div class="checkbox-group comprare ${item.comprare ? 'checked' : ''}">
@@ -886,6 +1197,9 @@
                     </div>
                 </div>
             `).join('');
+            
+            // Update counters after rendering
+            updateTabCounters();
         }
 
         // Add item on Enter key press
