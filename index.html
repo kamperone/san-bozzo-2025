@@ -665,7 +665,10 @@
                 // Test Firebase connection
                 testFirebaseConnection();
                 
-                loadData();
+                loadData().then(() => {
+                    console.log('📊 Data loaded, updating counters...');
+                    updateTabCounters();
+                });
                 setupRealtimeListeners();
             } else {
                 currentUser = null;
@@ -794,6 +797,7 @@
         }
 
         async function loadData() {
+            console.log('📂 Loading data...');
             if (currentUser && currentUser.email !== 'offline@local') {
                 try {
                     console.log('Loading data from Firebase...');
@@ -828,9 +832,15 @@
                 }
             }
             
+            console.log('📋 Final items after loading:', items);
             updateDaComprareList();
             renderItems();
-            updateTabCounters(); // Add this line to update counters after loading
+            
+            // Force update counters after a small delay
+            setTimeout(() => {
+                console.log('⏰ Force updating counters after delay...');
+                updateTabCounters();
+            }, 100);
         }
 
         async function saveData() {
@@ -904,6 +914,23 @@
             updateTabCounters();
         }
 
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Hide add item section for "Da Comprare" tab
+            const addSection = document.getElementById('addItemSection');
+            if (tab === 'daComprare') {
+                addSection.classList.add('hidden');
+            } else {
+                addSection.classList.remove('hidden');
+            }
+            
+            renderItems();
+            updateTabCounters();
+        }
+
         function updateDaComprareList() {
             items.daComprare = [];
             ['principale', 'abbigliamento', 'cibo'].forEach(category => {
@@ -913,7 +940,7 @@
                     }
                 });
             });
-            updateTabCounters(); // Update counters when "Da Comprare" list changes
+            updateTabCounters(); // Now this function is defined above
         }
 
         function addItem() {
