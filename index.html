@@ -183,13 +183,19 @@
             box-shadow: 0 4px 16px rgba(0,0,0,0.15);
         }
 
+        .item-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
         .item-text {
-            width: 100%;
+            flex: 1;
             border: none;
             background: transparent;
             font-size: 1rem;
             font-weight: 600;
-            margin-bottom: 0.75rem;
             color: #2d5a27;
             padding: 0.5rem;
             border-radius: 6px;
@@ -199,6 +205,122 @@
         .item-text:focus {
             outline: 2px solid #2d5a27;
             background: rgba(45, 90, 39, 0.05);
+        }
+
+        .photo-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            min-width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .photo-btn:hover {
+            background: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .photo-btn.has-photo {
+            background: #28a745;
+        }
+
+        .photo-preview {
+            width: 100%;
+            max-width: 150px;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #ddd;
+        }
+
+        .photo-preview:hover {
+            transform: scale(1.02);
+            border-color: #007bff;
+        }
+
+        .photo-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            backdrop-filter: blur(5px);
+        }
+
+        .photo-modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 12px;
+        }
+
+        .photo-modal-close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        .photo-modal-close:hover {
+            color: #bbb;
+        }
+
+        .photo-actions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            z-index: 1001;
+        }
+
+        .photo-action-btn {
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .photo-action-btn:hover {
+            background: white;
+            transform: translateY(-2px);
+        }
+
+        .photo-action-btn.delete {
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+        }
+
+        .photo-action-btn.delete:hover {
+            background: #dc3545;
+        }
+
+        .photo-input {
+            display: none;
         }
 
         .checkboxes {
@@ -434,6 +556,16 @@
         </div>
     </div>
 
+    <!-- Photo Modal -->
+    <div id="photoModal" class="photo-modal" onclick="closePhotoModal()">
+        <span class="photo-modal-close" onclick="closePhotoModal()">&times;</span>
+        <img class="photo-modal-content" id="modalPhoto">
+        <div class="photo-actions" onclick="event.stopPropagation()">
+            <button class="photo-action-btn" onclick="retakePhoto()">📷 Rifai Foto</button>
+            <button class="photo-action-btn delete" onclick="deletePhoto()">🗑️ Elimina</button>
+        </div>
+    </div>
+
     <script>
         // Firebase configuration
         const firebaseConfig = {
@@ -619,6 +751,7 @@
                 verificato: false,
                 pronto: false,
                 notes: '',
+                photo: null, // Base64 encoded photo
                 timestamp: Date.now(),
                 lastModified: Date.now()
             };
@@ -766,6 +899,117 @@
             }
         }
 
+        function compressImage(file, maxWidth = 800, quality = 0.8) {
+            return new Promise((resolve) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = () => {
+                    // Calculate new dimensions
+                    let { width, height } = img;
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = (height * maxWidth) / width;
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxWidth) {
+                            width = (width * maxWidth) / height;
+                            height = maxWidth;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Draw and compress
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                    resolve(compressedDataUrl);
+                };
+                
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        function takePhoto(itemId) {
+            if (currentTab === 'daComprare') return;
+            
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.capture = 'environment'; // Use back camera
+            
+            input.onchange = async (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                try {
+                    // Show loading
+                    const btn = document.querySelector(`[onclick="takePhoto('${itemId}')"]`);
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '⏳';
+                    btn.disabled = true;
+                    
+                    // Compress image
+                    const compressedImage = await compressImage(file);
+                    
+                    // Update item
+                    const item = items[currentTab].find(item => item.id === itemId);
+                    if (item) {
+                        item.photo = compressedImage;
+                        item.lastModified = Date.now();
+                        await saveData();
+                        renderItems();
+                    }
+                    
+                    // Restore button
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    
+                } catch (error) {
+                    console.error('Error processing photo:', error);
+                    alert('Errore nel processare la foto. Riprova.');
+                }
+            };
+            
+            input.click();
+        }
+
+        function viewPhoto(itemId) {
+            const item = items[currentTab].find(item => item.id === itemId);
+            if (!item || !item.photo) return;
+            
+            const modal = document.getElementById('photoModal');
+            const modalImg = document.getElementById('modalPhoto');
+            
+            modal.style.display = 'block';
+            modalImg.src = item.photo;
+            
+            // Set current photo for actions
+            window.currentPhotoItemId = itemId;
+        }
+
+        function closePhotoModal() {
+            document.getElementById('photoModal').style.display = 'none';
+        }
+
+        function deletePhoto() {
+            if (!window.currentPhotoItemId) return;
+            
+            if (confirm('Vuoi eliminare questa foto?')) {
+                const item = items[currentTab].find(item => item.id === window.currentPhotoItemId);
+                if (item) {
+                    item.photo = null;
+                    item.lastModified = Date.now();
+                    saveData();
+                    renderItems();
+                    closePhotoModal();
+                }
+            }
+        }
+
         function updateItem(id, field, value) {
             if (currentTab === 'daComprare') return;
             
@@ -830,11 +1074,27 @@
 
             container.innerHTML = currentItems.map(item => `
                 <div class="item">
-                    <input type="text" 
-                           class="item-text" 
-                           value="${item.text}" 
-                           ${currentTab === 'daComprare' ? 'readonly' : ''}
-                           onchange="updateItem('${item.id}', 'text', this.value)">
+                    <div class="item-header">
+                        <input type="text" 
+                               class="item-text" 
+                               value="${item.text}" 
+                               ${currentTab === 'daComprare' ? 'readonly' : ''}
+                               onchange="updateItem('${item.id}', 'text', this.value)">
+                        
+                        <button class="photo-btn ${item.photo ? 'has-photo' : ''}" 
+                                onclick="takePhoto('${item.id}')"
+                                ${currentTab === 'daComprare' ? 'disabled' : ''}
+                                title="${item.photo ? 'Cambia foto' : 'Aggiungi foto'}">
+                            📷
+                        </button>
+                    </div>
+                    
+                    ${item.photo ? `
+                        <img src="${item.photo}" 
+                             class="photo-preview" 
+                             onclick="viewPhoto('${item.id}')"
+                             alt="Foto di ${item.text}">
+                    ` : ''}
                     
                     <div class="checkboxes">
                         <div class="checkbox-group comprare ${item.comprare ? 'checked' : ''}">
