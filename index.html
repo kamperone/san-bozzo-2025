@@ -580,6 +580,7 @@
             <div class="controls">
                 <button class="btn btn-primary" onclick="sortByDate()">📅 Ordina per Data</button>
                 <button class="btn btn-secondary" onclick="sortAlphabetically()">🔤 Ordina A-Z</button>
+                <button class="btn" style="background: #17a2b8; color: white;" onclick="showDebugInfo()">🔍 Controllo Dati</button>
             </div>
 
             <div class="add-item" id="addItemSection">
@@ -836,11 +837,15 @@
             updateDaComprareList();
             renderItems();
             
-            // Force update counters after a small delay
+            // Try multiple update methods
+            updateTabCounters();
+            forceUpdateCounters();
+            
+            // Also try after longer delay
             setTimeout(() => {
-                console.log('⏰ Force updating counters after delay...');
-                updateTabCounters();
-            }, 100);
+                console.log('⏰ Final attempt updating counters...');
+                forceUpdateCounters();
+            }, 1000);
         }
 
         async function saveData() {
@@ -931,6 +936,7 @@
             updateTabCounters();
         }
 
+        // Add a simple force update function
         function updateDaComprareList() {
             items.daComprare = [];
             ['principale', 'abbigliamento', 'cibo'].forEach(category => {
